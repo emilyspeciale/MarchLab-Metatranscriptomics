@@ -136,7 +136,7 @@ else
     echo " ... exists"
 fi
 # Run spades for each sample, you want to use the trimmed reads now. Where it says "1-1A" is where you want to input with your own sample name (such as T0-Ctrl, Q18, etc.)
-rnaspades.py \
+rnades.py \
  --pe1-1 /proj/marchlab/projects/MetaT_Example/Trimmed_Reads/1-1A_R1_001_val_1.fq.gz \
  --pe1-2 /proj/marchlab/projects/MetaT_Example/Trimmed_Reads/1-1A_R2_001_val_2.fq.gz \
  -o $outdir
@@ -144,8 +144,18 @@ rnaspades.py \
 ### CD-HIT
 
 ## Annotation
-### Shortern Contig Headers
 ### TransDecoder
+In order to annotate, we will use TransDecoder to identify the best candidate open reading frame (ORF) for each contig.
+First, you need to install the latest version of TransDecoder into the directory of your choice. This can be done in your command line by grabbing the latest version of TransDecoder from GitHub and extracting it:
+```
+# Navigating to my project directory
+cd /proj/marchlab/projects/MetaT_Example
+# Downloading the zip file for TransDecoder 5.7.1
+wget https://github.com/TransDecoder/TransDecoder/archive/refs/tags/TransDecoder-v5.7.1.tar.gz
+--2024-11-07 09:31:46--  https://github.com/TransDecoder/TransDecoder/archive/refs/tags/TransDecoder-v5.7.1.tar.gz
+# Extract that zip file, which will create a new folder in MetaT_Example called TransDecoder-TransDecoder-v5.7.1
+tar -xzf /proj/marchlab/projects/MetaT_Example/TransDecoder-v5.7.1.tar.gz
+```
 ### MarFERReT
 ### eggNOG-mapper
 ## Alignment
