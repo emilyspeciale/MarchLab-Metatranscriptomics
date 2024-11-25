@@ -100,7 +100,7 @@ cd ${outdir}
 module load multiqc
 multiqc . 
 ```
-This will output a multiqc.html file, download it onto your computer, then open it so it shows up in your browser. It will show many important quality control variables for your samples. Make sure to check that everything looks good before continuing on with the rest of the pipeline.
+Run ```sbatch fastqc.sh``` to submit the job. This will output a multiqc.html file, download it onto your computer, then open it so it shows up in your browser. It will show many important quality control variables for your samples. Make sure to check that everything looks good before continuing on with the rest of the pipeline.
 ## Assembly
 Assembly refers to the process of reconstructing complete sequences (also known as contigs) from the reads provided by the high-throughput sequencing company. Because we are studying a microbial community with many organisms, we must conduct a de novo assembly, which is the assembly of sequences from scratch without a reference genome. To do this, we first use the tool rna-SPAdes to create a de novo assembly for each sample. We will then combine all these assemblies together into one large clustered assembly (also called a coassembly, mega-assembly, etc.). We use the tool CD-HIT to do this, as it also contains software to look for contigs that are redundant between individual assemblies and cluster them together, thus simplifying the analysis.
 ### rnaSPAdes
@@ -141,11 +141,14 @@ rnades.py \
  --pe1-2 /proj/marchlab/projects/MetaT_Example/Trimmed_Reads/1-1A_R2_001_val_2.fq.gz \
  -o $outdir
 ```
+
+Run ```sbatch rna_spades.sh``` to submit each job. 
+
 ### CD-HIT
 
-In order to run CD-HIT, we need to remame and put all of the individual fasta files produced by rnaSPAdes into one directory. I run this code directly in my command line since it doesn't take long, but feel free to submit it as a job.
+In order to run CD-HIT, we need to remame and put all of the individual fasta files produced by rnaSPAdes into one directory. I run this code directly in my command line since it doesn't take long.
 
-```
+```bash
 # Navigate to your spades directory
 cd /proj/marchlab/projects/MetaT_Example/Spades/
 
@@ -172,6 +175,72 @@ for dir in */; do
     fi
 done
 ```
+
+Navigate back to your work directory. 
+```bash
+cd /work/users/s/p/speciale
+```
+Within your work directory, run the command ```nano cdhit.sh ```. Copy and paste the following code, edit accordingly. 
+
+```bash
+#!/bin/bash
+#SBATCH -p general
+#SBATCH -N 1
+#SBATCH -t 3-00:00:00
+#SBATCH -J cdhit_1
+#SBATCH -o cdhit_1.out
+#SBATCH -e cdhit_1.%j.err
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user=speciale@unc.edu
+#SBATCH --mem=40G
+#SBATCH --cpus-per-task=16
+#SBATCH --ntasks=1
+
+indir=/proj/marchlab/projects/MetaT_Example/Spades/Transcripts
+outdir=/proj/marchlab/projects/MetaT_Example/CDHit
+# ifn is the combined (concatenated) assemblies
+input1=`ls ${indir}/*.fasta`
+ifn1="${outdir}/mega_assembly.fasta"
+ofn1="${outdir}/clustered_assembly.fasta"
+
+echo "Checking if ${outdir} exists ..."
+if [ ! -d ${outdir} ]
+then
+    echo "Create directory ... ${outdir}"
+    mkdir -p ${outdir}
+else
+    echo " ... exists"
+fi
+
+echo "Checking if ${ifn1} exists ..."
+if [ ! -f "${ifn1}" ]
+then
+    echo "Create combined assembly ... ${ifn1}"
+    cat ${input1} > ${ifn1}
+else
+    echo " ... exists"
+fi
+
+
+# load default cdit
+module load cdhit
+
+echo "${ifn1}"
+echo "${ofn1}"
+
+cd-hit-est \
+ -i "${ifn1}" \
+ -o "${ofn1}" \
+ -c .98 -n 10 -d 100 \
+ -T ${SLURM_CPUS_PER_TASK} \
+ -M 40000 \
+
+# --------------------- 
+# sacct -j $SLURM_JOB_ID --format='JobID,user,elapsed, cputime, totalCPU,MaxRSS,MaxVMSize,ncpus,NTasks,ExitCode'
+
+scontrol show job $SLURM_JOB_ID
+```
+Run ```cdhit.sh``` to submit the jobs. 
 
 ## Annotation
 ### TransDecoder
