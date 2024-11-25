@@ -143,6 +143,36 @@ rnades.py \
 ```
 ### CD-HIT
 
+In order to run CD-HIT, we need to remame and put all of the individual fasta files produced by rnaSPAdes into one directory. I run this code directly in my command line since it doesn't take long, but feel free to submit it as a job.
+
+```
+# Navigate to your spades directory
+cd /proj/marchlab/projects/MetaT_Example/Spades/
+
+# Rename each transcripts.fasta file to something unique, such as the subdirectory name
+for dir in */; do
+    # Check if the file transcripts.fasta exists in the subdirectory
+    if [ -f "${dir}transcripts.fasta" ]; then
+        # Extract the subdirectory name (remove trailing slash)
+        subdir_name=$(basename "$dir")
+        # Rename the file
+        cp "${dir}transcripts.fasta" "${dir}${subdir_name}_transcripts.fasta"
+    fi
+done
+
+# Create a directory for Transcripts directory if it doesn't exist, this will hold all of our rnaSPAdes transcripts file
+mkdir -p Transcripts
+
+# Copy each rnaSPAdes transcript file into the Transcripts directory
+for dir in */; do
+    # Check if the file with the new name exists in the subdirectory
+    if [ -f "${dir}${dir%/}_transcripts.fasta" ]; then
+        # Copy the file to the Transcripts directory
+        cp "${dir}${dir%/}_transcripts.fasta" "Transcripts/"
+    fi
+done
+```
+
 ## Annotation
 ### TransDecoder
 In order to annotate, we will use TransDecoder to identify the best candidate open reading frame (ORF) for each contig.
