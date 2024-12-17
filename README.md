@@ -257,7 +257,7 @@ tar -xzf /proj/marchlab/projects/MetaT_Example/TransDecoder-v5.7.1.tar.gz
 ```
 Now copy your clustered assembly into this new TransDecoder v5.7.1 folder using the command ```cp /proj/marchlab/projects/MetaT_Example/CDHit/clustered_assembly.fasta /proj/marchlab/projects/MetaT_Example/TransDecoder-TransDecoder-v5.7.1/```. 
 
-Navigate to this folder via ```cd //proj/marchlab/projects/MetaT_Example/TransDecoder-TransDecoder-v5.7.1```, then run ```nano transdecoder_longorfs.sh```. Copy and paste the following script, edit accordingly:
+Navigate to this folder via ```cd /proj/marchlab/projects/MetaT_Example/TransDecoder-TransDecoder-v5.7.1```, then run ```nano transdecoder_longorfs.sh```. Copy and paste the following script, edit accordingly:
 
 ```bash
 #!/bin/bash
@@ -278,7 +278,26 @@ Navigate to this folder via ```cd //proj/marchlab/projects/MetaT_Example/TransDe
 ```
 Then run ```sbatch transdecoder_longorfs.sh```. 
 
+Once ```transdecoder_longorfs.sh``` completes, in the same directory, create a new file, ```nano transdecoder_predict.sh```. Copy and paste the following script, edit accordingly:
 
+```bash
+#!/bin/bash
+
+#SBATCH -p general
+#SBATCH --nodes=1
+#SBATCH --time=0-48:00:00
+#SBATCH --mem=400G
+#SBATCH --ntasks=12
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user=speciale@unc.edu
+#SBATCH -J transdecoder_predict_ex
+#SBATCH -o transdecoder_predict_ex.%j.out
+#SBATCH -e transdecoder_predict_ex.%j.err
+
+
+./TransDecoder.Predict -t clustered_assembly.fasta
+```
+Then run ```sbatch transdecoder_predict.sh```.
 
 ### MarFERReT
 ### eggNOG-mapper
