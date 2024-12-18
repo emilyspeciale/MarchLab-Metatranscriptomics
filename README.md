@@ -300,6 +300,53 @@ Once ```transdecoder_longorfs.sh``` completes, in the same directory, create a n
 Then run ```sbatch transdecoder_predict.sh```.
 
 ### MarFERReT
+MarFERReT is an open-source reference library for marine eukaryote genes that was developed in 2023. MarFERReT includes taxonomic annotations from NCBI/PR2 and functional annotations from Pfam. I like to use MarFERReT as my primary annotator because 1) it has the most updated and expansive list of genomes for marine eukaryotes, 2) Pfam tends to produce the highest amount of annotations compared to other functional databases, and 3) it is very user friendly. However, there are some drawbacks to MarFERRet, being that 1) it does not include many reference genomes for bacteria/viruses and 2) Pfam annotations are typically for broader protein domains rather than specific genes, and Pfam does not allow for direct mapping to pathways like KEGG does. Thus, I like to use MarFERReT in conjunction with EUKulele for taxonomic annotation and eggNOG for functional annotation. See below for more details!
+
+MarFERReT annotation takes a few steps. I have already installed MarFERReT into the data folder. First, navigate to your work directory using ```cd /work/users/s/p/speciale```. Then, write ```nano marferret.sh```. 
+
+```bash
+#!/bin/bash
+
+#SBATCH -p general
+#SBATCH --nodes=1
+#SBATCH --time=0-48:00:00
+#SBATCH --mem=200G
+#SBATCH --ntasks=12
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user=speciale@unc.edu
+#SBATCH -J mft_ex1
+#SBATCH -o mft_ex1.%j.out
+#SBATCH -e mft_ex1.%j.err
+
+module load diamond
+
+indir=/proj/marchlab/projects/MetaT_Example/TransDecoder-TransDecoder-v5.7.1
+
+outdir=/proj/marchlab/projects/MetaT_Example/Marferret
+
+echo "Checking if ${outdir} exists ..."
+if [ ! -d ${outdir} ]
+then
+    echo "Create directory ... ${outdir}"
+    mkdir -p ${outdir}
+else
+    echo " ... exists"
+fi
+
+
+samples='clustered_assembly.fasta.transdecoder.pep'
+
+for s in `echo $samples`; do
+
+diamond blastp -d /proj/marchlab/data/MarFERReT_v1/MarFERReT.v1.1.1.dmnd \
+        -q $indir/${s} \
+        -o $outdir/${s}marferret.m8 \
+        -p 12 -e 0.000001 -k 1
+
+done
+```
+
+
 ### eggNOG-mapper
 ## Alignment
 ### Salmon 
