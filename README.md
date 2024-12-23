@@ -348,6 +348,59 @@ done
 
 
 ### eggNOG-mapper
+
+First, run  ```mkdir -p /proj/marchlab/projects/MetaT_Example/Eggnog/Chunks``` to set up the appropriate directories for eggNOG. 
+
+eggNOG can have trouble running if your grand assembly is too large. If this is the case, it is best to split your grand assembly into a few separate files, run each of them through eggNOG, then combine them again. To do this, you can use this python script, which I run by calling ```module load python/3.9.6```, then executing this code in my command line:
+
+```python
+import os
+
+def split_pep(input_file, output_dir, contigs_per_chunk):
+    output_prefix = "split_part_"
+    file_number = 0
+    contig_count = 0
+    output_file = None
+
+    # Ensure the output directory exists
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    def open_new_file():
+        nonlocal output_file, file_number, contig_count
+        if output_file:
+            output_file.close()
+        file_number += 1
+        contig_count = 0
+        output_filename = os.path.join(output_dir, f"{output_prefix}{file_number:03d}.pep")
+        output_file = open(output_filename, 'w')
+        print(f"Creating new file: {output_filename}")
+
+    with open(input_file, 'r') as infile:
+        for line in infile:
+            if line.startswith('>'):
+                if contig_count >= contigs_per_chunk:
+                    open_new_file()
+                contig_count += 1
+
+            if output_file is None:
+                open_new_file()
+
+            output_file.write(line)
+
+    # Close the last output file
+    if output_file:
+        output_file.close()
+
+# Example usage
+input_file = '/proj/marchlab/projects/MetaT_Example/clustered_assembly.fasta.transdecoder.pep'
+output_dir = '/proj/marchlab/projects/MetaT_Example/Eggnog/Chunks'
+
+contigs_per_chunk = 1000000
+split_pep(input_file, output_dir, contigs_per_chunk)
+
+
+```
 ## Alignment
 ### Salmon 
 ### Tximport
