@@ -402,6 +402,31 @@ split_pep(input_file, output_dir, contigs_per_chunk)
 
 ```
 ## Alignment
+Alignment is the quantification of reads to their associated contigs. This step is not dependent on annotation, as it only requires the trimmed reads and the clustered assembly. We use salmon to conduct our alignment, and the first step of this process is to create an assembly index. 
+
+First, write ```nano align_part1.sh```, then copy and paste the following code. Edit accordingly (you do not need to make the directory for Alignment ahead of time, the code does it for you):
+
+```bash
+#!/bin/bash
+#SBATCH -p general
+#SBATCH --nodes=1
+#SBATCH --time=5-00:00:00
+#SBATCH --mem=400G
+#SBATCH --ntasks=1
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user=speciale@unc.edu
+#SBATCH -J align_pt1
+#SBATCH -o align_pt1.%A.out
+#SBATCH -e align_pt1.%A.err
+
+module load salmon
+
+salmon index -i /proj/marchlab/projects/MetaT_Example/Alignment/AssemblyIndex \
+--transcripts /proj/marchlab/projects/MetaT_Example/CDHit/clustered_assembly.fasta -k 31
+
+```
+
+Run ```sbatch align_part1.sh```. Wait for this code to finish running before proceeding to part 2 (it might take a while). 
 ### Salmon 
 ### Tximport
 ## Analyzing Results
