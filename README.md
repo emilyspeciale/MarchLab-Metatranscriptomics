@@ -404,6 +404,8 @@ split_pep(input_file, output_dir, contigs_per_chunk)
 ## Alignment
 Alignment is the quantification of reads to their associated contigs. This step is not dependent on annotation, as it only requires the trimmed reads and the clustered assembly. We use salmon to conduct our alignment, and the first step of this process is to create an assembly index. 
 
+### Salmon 
+
 First, write ```nano align_part1.sh```, then copy and paste the following code. Edit accordingly (you do not need to make the directory for Alignment ahead of time, the code does it for you):
 
 ```bash
@@ -427,9 +429,120 @@ salmon index -i /proj/marchlab/projects/MetaT_Example/Alignment/AssemblyIndex \
 ```
 
 Run ```sbatch align_part1.sh```. Wait for this code to finish running before proceeding to part 2 (it might take a while). 
-### Salmon 
+
+Once part 1 finishes, write ```nano align_part2.sh```, then copy and paste the following code. Edit accordingly, specifically in the samples variable, make sure to include every sample you want Salmon to quantify.
+
+```bash
+#!/bin/bash
+
+indir=/proj/marchlab/projects/MetaT_Example/Trimmed_Reads
+outdir=/proj/marchlab/projects/MetaT_Example/Alignment/Salmon_Quant
+
+mkdir -p /proj/marchlab/projects/MetaT_Example/Alignment/Salmon_Quant
+
+samples='1-1A 1-1B 2-1A 2-1B 2-1C 3-1A 3-1B 3-1C'
+
+for s in $samples; do
+    echo ${s}
+    R1=`ls -l $indir | grep -o ${s}_R1_001_val_1.fq.gz`
+    R2=`ls -l $indir | grep -o ${s}_R2_001_val_2.fq.gz`
+    echo ${R1}
+    echo ${R2}
+    jobfile="salmonquant${s}.sh"
+    echo $jobfile
+    cat <<EOF > $jobfile
+#!/bin/bash
+#SBATCH -N 1
+#SBATCH -t 05-00:00:00
+#SBATCH --mem=250g
+#SBATCH -n 16
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user=speciale@unc.edu
+#SBATCH -J alignpart2
+#SBATCH -o alignpart2.%A.out
+#SBATCH -e alignpart2.%A.err
+
+
+module add salmon
+echo 'BEGIN'
+date
+hostname
+salmon quant -l A -i  /proj/marchlab/projects/MetaT_Example/Alignment/AssemblyIndex \
+        -1 $indir/${R1} \\
+        -2 $indir/${R2} \\
+        -p 5 --validateMappings \\
+        -o /proj/marchlab/projects/MetaT_Example/Alignment/Salmon_Quant/${s}_quant
+
+echo 'END'
+
+date
+
+EOF
+
+    sbatch $jobfile
+
+done
+```
+
+Run ```sbatch align_part2.sh```.
+
 ### Tximport
+Tximport is an R package that can be used to merge all the results from each sample's alignment into an R object. First, write ```nano tximport.r```, then copy and paste the following code. Edit accordingly.
+```
+BiocManager::install('tximport')
+library(tximport)
+library(DESeq2)
+library(tidyverse)
+library(dplyr)
+library(stringr)
+
+
+samples<-list.files(path="/proj/marchlab/projects/MetaT_Example/Alignment/Salmon_Quant", full.names=T)
+
+files<-file.path(samples,"quant.sf")
+
+names(files)<-str_replace(samples, "/proj/marchlab/projects/MetaT_Example/Alignment/Salmon_Quant", "")%>%str_replace(".salmon","")
+
+txi_obj <- tximport(files, type = "salmon", txOut = TRUE)
+
+txi_obj.rds <- saveRDS(txi_obj, file = "/proj/marchlab/projects/MetaT_Example/Alignment")
+```
+
+Now create a job file, ```nano tximport.sh```, to run the tximport R code. Edit accordingly.
+
+```bash
+#!/bin/bash
+#SBATCH -p general
+#SBATCH --nodes=1
+#SBATCH --time=0-2:00:00
+#SBATCH --mem=300G
+#SBATCH --ntasks=3
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user=speciale@unc.edu
+#SBATCH -J txi
+#SBATCH -o txi.%A.out
+#SBATCH -e txi.%A.err
+
+module load r/4.2.2
+cd /work/users/s/p/speciale
+outdir=/proj/marchlab/projects/MetaT_Example/Alignment
+
+echo "Checking if ${outdir} exists ..."
+if [ ! -d ${outdir} ]
+then
+    echo "Create directory ... ${outdir}"
+    mkdir -p ${outdir}
+else
+    echo " ... exists"
+fi
+
+
+Rscript tximport.r
+
+```
+
+Run ```sbatch tximport.sh```, and the final product will be an R object that contains your counts matrix. 
+
 ## Analyzing Results
-### Merging mapped read counts with annotations
-### Taxonomy of mapped reads
-### DESeq2
+
+
