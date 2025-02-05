@@ -505,7 +505,7 @@ names(files)<-str_replace(samples, "/proj/marchlab/projects/MetaT_Example/Alignm
 
 txi_obj <- tximport(files, type = "salmon", txOut = TRUE)
 
-txi_obj.rds <- saveRDS(txi_obj, file = "/proj/marchlab/projects/MetaT_Example/Alignment")
+txi_obj.rds <- saveRDS(txi_obj, file = "/proj/marchlab/projects/MetaT_Example/Alignment/txi_obj.rds")
 ```
 
 Now create a job file, ```nano tximport.sh```, to run the tximport R code. Edit accordingly.
